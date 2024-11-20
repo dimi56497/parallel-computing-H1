@@ -1,14 +1,29 @@
 #include <iostream>
+#include <fstream>
 
 #ifndef N_SIZE
 #define N_SIZE 16
 #endif //N_SIZE
+
+#define FILE_NAME "serial.csv"
+
 void matTranspose(float** M, float** T);
 bool checkSym(float** M);
+bool checkMat(float **M, float **T);
 
 int main() {
     struct timespec start_ts, end_ts;
 
+    std::fstream file;
+    file.open(FILE_NAME, std::ios::in);
+    if (!file.is_open()) {
+        file.open(FILE_NAME, std::ios::out);
+        file << "MatSize,Time,Valid\n";
+    }
+    file.close();
+
+    file.open(FILE_NAME, std::ios::out | std::ios::app);
+    
     //create matrices
     float **M = new(std::nothrow) float*[N_SIZE];
     float **T = new(std::nothrow) float*[N_SIZE];
@@ -47,6 +62,9 @@ int main() {
     clock_gettime(CLOCK_MONOTONIC, &end_ts);
 
     elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
+    file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
+
+    file.close();
 
     //delete matrices
     for(int i = 0; i < N_SIZE; i++) {
