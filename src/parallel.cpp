@@ -7,6 +7,8 @@ void matTranspose(float** M, float** T);
 bool checkSym(float** M);
 
 int main() {
+    struct timespec start_ts, end_ts;
+
     //create matrices
     float **M = new(std::nothrow) float*[N_SIZE];
     float **T = new(std::nothrow) float*[N_SIZE];
@@ -34,8 +36,17 @@ int main() {
         }
     }
 
+    // time measurement
+    clock_gettime(CLOCK_MONOTONIC, &start_ts);
     checkSym(M);
+    clock_gettime(CLOCK_MONOTONIC, &end_ts);
+    double elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
+
+    clock_gettime(CLOCK_MONOTONIC, &start_ts);
     matTranspose(M,T);
+    clock_gettime(CLOCK_MONOTONIC, &end_ts);
+
+    elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
 
     //delete matrices
     for(int i = 0; i < N_SIZE; i++) {
@@ -66,4 +77,19 @@ bool checkSym(float** M) {
         }
     }
     return symmetric;
+}
+
+// function created to check if the matrix transposition has been done correctly
+bool checkMat(float **M, float **T) {
+    bool same = true;
+
+    for(size_t i = 0; i < 0; i++) {
+        for(size_t j = 0; j < 0; j++) {
+            if(M[i][j] != T[j][i]) {
+                same = false;
+                break;
+            }
+        }
+    }
+    return same;
 }
