@@ -5,7 +5,13 @@
 #define N_SIZE 16
 #endif //N_SIZE
 
-#define FILE_NAME "serial.csv"
+#ifndef FILE_NAME
+#define FILE_NAME "serial"
+#endif //FILE_NAME
+
+#define TRANSPOSE_FILE_NAME FILE_NAME "Transpose.csv"
+#define SYMM_FILE_NAME FILE_NAME "Symm.csv"
+
 
 void matTranspose(float** M, float** T);
 bool checkSym(float** M);
@@ -14,15 +20,26 @@ bool checkMat(float **M, float **T);
 int main() {
     struct timespec start_ts, end_ts;
 
-    std::fstream file;
-    file.open(FILE_NAME, std::ios::in);
-    if (!file.is_open()) {
-        file.open(FILE_NAME, std::ios::out);
-        file << "MatSize,Time,Valid\n";
+    // log file creation
+    std::fstream tr_file;
+    std::fstream sym_file;
+    tr_file.open(std::string(TRANSPOSE_FILE_NAME), std::ios::in);
+    sym_file.open(std::string(SYMM_FILE_NAME), std::ios::in);
+    if (!tr_file.is_open()) {
+        tr_file.open(std::string(TRANSPOSE_FILE_NAME), std::ios::out);
+        tr_file << "MatSize,Time,Valid\n";
     }
-    file.close();
 
-    file.open(FILE_NAME, std::ios::out | std::ios::app);
+    if (!sym_file.is_open()) {
+        sym_file.open(std::string(SYMM_FILE_NAME), std::ios::out);
+        sym_file << "MatSize,Time,Valid\n";
+    }
+
+    tr_file.close();
+    sym_file.close();
+
+    tr_file.open(std::string(TRANSPOSE_FILE_NAME), std::ios::out | std::ios::app);
+    sym_file.open(std::string(SYMM_FILE_NAME), std::ios::out | std::ios::app);
     
     //create matrices
     float **M = new(std::nothrow) float*[N_SIZE];
@@ -56,15 +73,17 @@ int main() {
     checkSym(M);
     clock_gettime(CLOCK_MONOTONIC, &end_ts);
     double elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
+    sym_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
 
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
     matTranspose(M,T);
     clock_gettime(CLOCK_MONOTONIC, &end_ts);
 
     elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
-    file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
+    tr_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
 
-    file.close();
+    tr_file.close();
+    sym_file.close();
 
     //delete matrices
     for(int i = 0; i < N_SIZE; i++) {
@@ -101,8 +120,8 @@ bool checkSym(float** M) {
 bool checkMat(float **M, float **T) {
     bool same = true;
 
-    for(size_t i = 0; i < 0; i++) {
-        for(size_t j = 0; j < 0; j++) {
+    for(size_t i = 0; i < N_SIZE; i++) {
+        for(size_t j = 0; j < N_SIZE; j++) {
             if(M[i][j] != T[j][i]) {
                 same = false;
                 break;
