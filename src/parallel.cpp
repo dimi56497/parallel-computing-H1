@@ -145,16 +145,24 @@ void matTransposeImp(float** M, float** T) {
 
 void matTransposeImpBlock(float** M, float** T) {
     for(size_t i = 0; i < N_SIZE; i += 2) {
-        for (size_t j = 0; j < N_SIZE; j += 4) {
+        for (size_t j = 0; j < N_SIZE; j += 8) {
             T[j][i] = M[i][j];
             T[j + 1][i] = M[i][j + 1];
             T[j + 2][i] = M[i][j + 2];
             T[j + 3][i] = M[i][j + 3];
+            T[j + 4][i] = M[i][j + 4];
+            T[j + 5][i] = M[i][j + 5];
+            T[j + 6][i] = M[i][j + 6];
+            T[j + 7][i] = M[i][j + 7];
 
             T[j][i + 1] = M[i + 1][j];
             T[j + 1][i + 1] = M[i + 1][j + 1];
             T[j + 2][i + 1] = M[i + 1][j + 2];
             T[j + 3][i + 1] = M[i + 1][j + 3];
+            T[j + 4][i + 1] = M[i + 1][j + 4];
+            T[j + 5][i + 1] = M[i + 1][j + 5];
+            T[j + 6][i + 1] = M[i + 1][j + 6];
+            T[j + 7][i + 1] = M[i + 1][j + 7];
         }
     }
 }
