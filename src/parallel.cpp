@@ -9,8 +9,8 @@
 #define FILE_NAME "serial"
 #endif //FILE_NAME
 
-#define TRANSPOSE_FILE_NAME FILE_NAME "Transpose.csv"
-#define SYMM_FILE_NAME FILE_NAME "Symm.csv"
+#define TRANSPOSE_FILE_NAME "logs/" FILE_NAME "Transpose.csv"
+#define SYMM_FILE_NAME "logs/" FILE_NAME "Symm.csv"
 
 
 void matTranspose(float** M, float** T);
@@ -19,7 +19,8 @@ void matTransposeImpBlock(float** M, float** T);
 bool checkSym(float** M);
 bool checkSymImp(float** M);
 bool checkSymImpBlock(float** M);
-bool checkMat(float **M, float **T);
+bool checkMat(float** M, float** T);
+bool checkMatSym(float** M);
 
 int main() {
     struct timespec start_ts, end_ts;
@@ -75,10 +76,10 @@ int main() {
     // time measurement
     #ifdef SERIAL
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
-    checkSym(M);
+    bool symmetric = checkSym(M);
     clock_gettime(CLOCK_MONOTONIC, &end_ts);
     double elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
-    sym_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
+    sym_file << N_SIZE << "," << elapsed_time << "," << (symmetric == checkMatSym(M)) << "\n";
 
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
     matTranspose(M,T);
@@ -91,13 +92,13 @@ int main() {
     #ifdef IMPLICIT
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
     #ifndef BLOCK
-    checkSymImp(M);
+    bool symmetric = checkSymImp(M);
     #else
-    checkSymImpBlock(M);
+    bool symmetric = checkSymImpBlock(M);
     #endif //BLOCK
     clock_gettime(CLOCK_MONOTONIC, &end_ts);
     double elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
-    sym_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
+    sym_file << N_SIZE << "," << elapsed_time << "," << (symmetric == checkMatSym(M)) << "\n";
 
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
     #ifndef BLOCK
@@ -122,7 +123,7 @@ int main() {
 
     delete[] M;
     delete[] T;
-    
+
     return 0;
 }
 
@@ -207,4 +208,18 @@ bool checkMat(float** M, float** T) {
         }
     }
     return same;
+}
+
+bool checkMatSym(float** M) {
+    bool symm = true;
+
+    for(size_t i = 0; i < N_SIZE; i++) {
+        for(size_t j = 0; j < N_SIZE; j++) {
+            if(M[i][j] != M[j][i]) {
+                symm = false;
+                break;
+            }
+        }
+    }
+    return symm;
 }
