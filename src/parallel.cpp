@@ -1,5 +1,10 @@
 #include <iostream>
 #include <fstream>
+#include <cmath>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif //_OPENMP
 
 #ifndef N_SIZE
 #define N_SIZE 16
@@ -16,14 +21,17 @@
 void matTranspose(float** M, float** T);
 void matTransposeImp(float** M, float** T);
 void matTransposeImpBlock(float** M, float** T);
+void matTransposeOMP(float** M, float** T);
 bool checkSym(float** M);
 bool checkSymImp(float** M);
 bool checkSymImpBlock(float** M);
+bool checkSymOMP(float** M);
 bool checkMat(float** M, float** T);
 bool checkMatSym(float** M);
 
 int main() {
     struct timespec start_ts, end_ts;
+    double start_t, end_t;
 
     // log file creation
     std::fstream tr_file;
@@ -32,12 +40,20 @@ int main() {
     sym_file.open(std::string(SYMM_FILE_NAME), std::ios::in);
     if (!tr_file.is_open()) {
         tr_file.open(std::string(TRANSPOSE_FILE_NAME), std::ios::out);
+        #ifndef _OPENMP
         tr_file << "MatSize,Time,Valid\n";
+        #else
+        tr_file << "MatSize,Time,ThreadNum,Valid\n";
+        #endif //_OPENMP
     }
 
     if (!sym_file.is_open()) {
         sym_file.open(std::string(SYMM_FILE_NAME), std::ios::out);
+        #ifndef OMP
         sym_file << "MatSize,Time,Valid\n";
+        #else
+        sym_file << "MatSize,Time,ThreadNum,Valid\n";
+        #endif //_OPENMP
     }
 
     tr_file.close();
@@ -75,18 +91,19 @@ int main() {
 
     // time measurement
     #ifdef SERIAL
-    clock_gettime(CLOCK_MONOTONIC, &start_ts);
+    start_t = omp_get_wtime();
     bool symmetric = checkSym(M);
-    clock_gettime(CLOCK_MONOTONIC, &end_ts);
-    double elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
-    sym_file << N_SIZE << "," << elapsed_time << "," << (symmetric == checkMatSym(M)) << "\n";
+    end_t = omp_get_wtime();
 
-    clock_gettime(CLOCK_MONOTONIC, &start_ts);
+    double elapsed_time = (end_t - start_t);
+    sym_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << (symmetric == checkMatSym(M)) << "\n";
+
+    start_t = omp_get_wtime();
     matTranspose(M,T);
-    clock_gettime(CLOCK_MONOTONIC, &end_ts);
+    end_t = omp_get_wtime();
 
-    elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
-    tr_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
+    elapsed_time = (end_t - start_t);
+    tr_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << checkMat(M,T) << "\n";
     #endif //SERIAL
 
     #ifdef IMPLICIT
@@ -111,6 +128,22 @@ int main() {
     elapsed_time = (end_ts.tv_sec - start_ts.tv_sec) + (end_ts.tv_nsec - start_ts.tv_nsec) * 1e-9;
     tr_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
     #endif //IMPLICIT
+
+    #ifdef OMP
+    start_t = omp_get_wtime();
+    bool symmetric = checkSymOMP(M);
+    end_t = omp_get_wtime();
+
+    double elapsed_time = (end_t - start_t);
+    sym_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << (symmetric == checkMatSym(M)) << "\n";
+
+    start_t = omp_get_wtime();
+    matTransposeOMP(M,T);
+    end_t = omp_get_wtime();
+
+    elapsed_time = (end_t - start_t);
+    tr_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << checkMat(M,T) << "\n";
+    #endif //OMP
 
     tr_file.close();
     sym_file.close();
@@ -167,6 +200,15 @@ void matTransposeImpBlock(float** M, float** T) {
     }
 }
 
+void matTransposeOMP(float** M, float** T) {
+    #pragma omp parallel for schedule(static) collapse(2)
+    for(size_t i = 0; i < N_SIZE; i++) {
+        for (size_t j = 0; j < N_SIZE; j++) {
+            T[j][i] = M[i][j];
+        }
+    }
+}
+
 bool checkSym(float** M) {
     bool symmetric = true;
     for (size_t i = 0; i < N_SIZE; i++) {
@@ -192,15 +234,41 @@ bool checkSymImp(float** M) {
 }
 
 bool checkSymImpBlock(float** M) {
-    bool symmetric = true;
-    for (size_t i = 0; i < N_SIZE; i++) {
-        for (size_t j = 0; j < N_SIZE; j++) {
-            if(M[i][j] != M[j][i]) {
-                symmetric = false;
-            }
+    float sum = 0.0;
+    for (size_t i = 0; i < N_SIZE; i += 2) {
+        for (size_t j = 0; j < N_SIZE; j += 8) {
+            sum += fabs(M[i][j] - M[j][i]);
+            sum += fabs(M[i][j + 1] - M[j + 1][i]);
+            sum += fabs(M[i][j + 2] - M[j + 2][i]);
+            sum += fabs(M[i][j + 3] - M[j + 3][i]);
+            sum += fabs(M[i][j + 4] - M[j + 4][i]);
+            sum += fabs(M[i][j + 5] - M[j + 5][i]);
+            sum += fabs(M[i][j + 6] - M[j + 6][i]);
+            sum += fabs(M[i][j + 7] - M[j + 7][i]);
+
+            sum += fabs(M[i + 1][j] - M[j][i + 1]);
+            sum += fabs(M[i + 1][j + 1] - M[j + 1][i + 1]);
+            sum += fabs(M[i + 1][j + 2] - M[j + 2][i + 1]);
+            sum += fabs(M[i + 1][j + 3] - M[j + 3][i + 1]);
+            sum += fabs(M[i + 1][j + 4] - M[j + 4][i + 1]);
+            sum += fabs(M[i + 1][j + 5] - M[j + 5][i + 1]);
+            sum += fabs(M[i + 1][j + 6] - M[j + 6][i + 1]);
+            sum += fabs(M[i + 1][j + 7] - M[j + 7][i + 1]);
         }
     }
-    return symmetric;
+    return sum == 0.0;
+}
+
+bool checkSymOMP(float** M) {
+    float sum = 0.0;
+    #pragma omp parallel for schedule(static) collapse(2) reduction(+:sum)
+    for (size_t i = 0; i < N_SIZE; i++) {
+        for (size_t j = 0; j < N_SIZE; j++) {
+            sum += fabs(M[i][j] - M[j][i]);
+        }
+    }
+
+    return sum == 0.0;
 }
 
 // function created to check if the matrix transposition has been done correctly
