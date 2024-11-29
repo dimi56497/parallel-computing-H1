@@ -212,7 +212,7 @@ void matTransposeOMP(float** M, float** T) {
 bool checkSym(float** M) {
     bool symmetric = true;
     for (size_t i = 0; i < N_SIZE; i++) {
-        for (size_t j = 0; j < N_SIZE; j++) {
+        for (size_t j = i + 1; j < N_SIZE; j++) {
             if(M[i][j] != M[j][i]) {
                 symmetric = false;
             }
@@ -224,7 +224,7 @@ bool checkSym(float** M) {
 bool checkSymImp(float** M) {
     bool symmetric = true;
     for (size_t i = 0; i < N_SIZE; i++) {
-        for (size_t j = 0; j < N_SIZE; j++) {
+        for (size_t j = i + 1; j < N_SIZE; j++) {
             if(M[i][j] != M[j][i]) {
                 symmetric = false;
             }
@@ -263,7 +263,7 @@ bool checkSymOMP(float** M) {
     float sum = 0.0;
     #pragma omp parallel for schedule(static) collapse(2) reduction(+:sum)
     for (size_t i = 0; i < N_SIZE; i++) {
-        for (size_t j = 0; j < N_SIZE; j++) {
+        for (size_t j = i + 1; j < N_SIZE; j++) {
             sum += fabs(M[i][j] - M[j][i]);
         }
     }
@@ -276,7 +276,7 @@ bool checkMat(float** M, float** T) {
     bool same = true;
 
     for(size_t i = 0; i < N_SIZE; i++) {
-        for(size_t j = 0; j < N_SIZE; j++) {
+        for(size_t j = i; j < N_SIZE; j++) {
             if(M[i][j] != T[j][i]) {
                 same = false;
                 break;
@@ -290,7 +290,7 @@ bool checkMatSym(float** M) {
     bool symm = true;
 
     for(size_t i = 0; i < N_SIZE; i++) {
-        for(size_t j = 0; j < N_SIZE; j++) {
+        for(size_t j = i + 1; j < N_SIZE; j++) {
             if(M[i][j] != M[j][i]) {
                 symm = false;
                 break;
