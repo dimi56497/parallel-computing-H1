@@ -40,7 +40,7 @@ int main() {
     sym_file.open(std::string(SYMM_FILE_NAME), std::ios::in);
     if (!tr_file.is_open()) {
         tr_file.open(std::string(TRANSPOSE_FILE_NAME), std::ios::out);
-        #ifndef _OPENMP
+        #ifndef OMP
         tr_file << "MatSize,Time,Valid\n";
         #else
         tr_file << "MatSize,Time,ThreadNum,Valid\n";
@@ -96,14 +96,14 @@ int main() {
     end_t = omp_get_wtime();
 
     double elapsed_time = (end_t - start_t);
-    sym_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << (symmetric == checkMatSym(M)) << "\n";
+    sym_file << N_SIZE << "," << elapsed_time << "," << (symmetric == checkMatSym(M)) << "\n";
 
     start_t = omp_get_wtime();
     matTranspose(M,T);
     end_t = omp_get_wtime();
 
     elapsed_time = (end_t - start_t);
-    tr_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << checkMat(M,T) << "\n";
+    tr_file << N_SIZE << "," << elapsed_time << "," << checkMat(M,T) << "\n";
     #endif //SERIAL
 
     #ifdef IMPLICIT
