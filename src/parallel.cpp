@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <cmath>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -22,10 +21,12 @@ void matTranspose(float** M, float** T);
 void matTransposeImp(float** M, float** T);
 void matTransposeImpBlock(float** M, float** T);
 void matTransposeOMP(float** M, float** T);
+void matTransposeOMPBlock(float** M, float** T);
 bool checkSym(float** M);
 bool checkSymImp(float** M);
 bool checkSymImpBlock(float** M);
 bool checkSymOMP(float** M);
+bool checkSymOMPBlock(float** M);
 bool checkMat(float** M, float** T);
 bool checkMatSym(float** M);
 
@@ -131,14 +132,22 @@ int main() {
 
     #ifdef OMP
     start_t = omp_get_wtime();
+    #ifndef BLOCK
     bool symmetric = checkSymOMP(M);
+    #else
+    bool symmetric = checkSymOMPBlock(M);
+    #endif
     end_t = omp_get_wtime();
 
     double elapsed_time = (end_t - start_t);
     sym_file << N_SIZE << "," << elapsed_time << "," << omp_get_max_threads() << "," << (symmetric == checkMatSym(M)) << "\n";
 
     start_t = omp_get_wtime();
+    #ifndef BLOCK
     matTransposeOMP(M,T);
+    #else
+    matTransposeOMPBlock(M,T);
+    #endif
     end_t = omp_get_wtime();
 
     elapsed_time = (end_t - start_t);
@@ -177,25 +186,13 @@ void matTransposeImp(float** M, float** T) {
 }
 
 void matTransposeImpBlock(float** M, float** T) {
+    int block_size = N_SIZE / 4;
     for(size_t i = 0; i < N_SIZE; i += 2) {
-        for (size_t j = 0; j < N_SIZE; j += 8) {
-            T[j][i] = M[i][j];
-            T[j + 1][i] = M[i][j + 1];
-            T[j + 2][i] = M[i][j + 2];
-            T[j + 3][i] = M[i][j + 3];
-            T[j + 4][i] = M[i][j + 4];
-            T[j + 5][i] = M[i][j + 5];
-            T[j + 6][i] = M[i][j + 6];
-            T[j + 7][i] = M[i][j + 7];
-
-            T[j][i + 1] = M[i + 1][j];
-            T[j + 1][i + 1] = M[i + 1][j + 1];
-            T[j + 2][i + 1] = M[i + 1][j + 2];
-            T[j + 3][i + 1] = M[i + 1][j + 3];
-            T[j + 4][i + 1] = M[i + 1][j + 4];
-            T[j + 5][i + 1] = M[i + 1][j + 5];
-            T[j + 6][i + 1] = M[i + 1][j + 6];
-            T[j + 7][i + 1] = M[i + 1][j + 7];
+        for (size_t j = 0; j < N_SIZE; j += block_size) {
+            for(size_t k = 0; k < block_size; k++) {
+                T[j + k][i] = M[i][j + k];
+                T[j + k][i + 1] = M[i + 1][j + k];
+            }
         }
     }
 }
@@ -205,6 +202,19 @@ void matTransposeOMP(float** M, float** T) {
     for(size_t i = 0; i < N_SIZE; i++) {
         for (size_t j = 0; j < N_SIZE; j++) {
             T[j][i] = M[i][j];
+        }
+    }
+}
+
+void matTransposeOMPBlock(float** M, float** T) {
+    int block_size = N_SIZE / 4;
+    #pragma omp parallel for schedule(static) collapse(2)
+    for(size_t i = 0; i < N_SIZE; i += 2) {
+        for (size_t j = 0; j < N_SIZE; j += block_size) {
+            for(size_t k = 0; k < block_size; k++) {
+                T[j + k][i] = M[i][j + k];
+                T[j + k][i + 1] = M[i + 1][j + k];
+            }
         }
     }
 }
@@ -234,41 +244,44 @@ bool checkSymImp(float** M) {
 }
 
 bool checkSymImpBlock(float** M) {
-    float sum = 0.0;
-    for (size_t i = 0; i < N_SIZE; i += 2) {
-        for (size_t j = 0; j < N_SIZE; j += 8) {
-            sum += fabs(M[i][j] - M[j][i]);
-            sum += fabs(M[i][j + 1] - M[j + 1][i]);
-            sum += fabs(M[i][j + 2] - M[j + 2][i]);
-            sum += fabs(M[i][j + 3] - M[j + 3][i]);
-            sum += fabs(M[i][j + 4] - M[j + 4][i]);
-            sum += fabs(M[i][j + 5] - M[j + 5][i]);
-            sum += fabs(M[i][j + 6] - M[j + 6][i]);
-            sum += fabs(M[i][j + 7] - M[j + 7][i]);
-
-            sum += fabs(M[i + 1][j] - M[j][i + 1]);
-            sum += fabs(M[i + 1][j + 1] - M[j + 1][i + 1]);
-            sum += fabs(M[i + 1][j + 2] - M[j + 2][i + 1]);
-            sum += fabs(M[i + 1][j + 3] - M[j + 3][i + 1]);
-            sum += fabs(M[i + 1][j + 4] - M[j + 4][i + 1]);
-            sum += fabs(M[i + 1][j + 5] - M[j + 5][i + 1]);
-            sum += fabs(M[i + 1][j + 6] - M[j + 6][i + 1]);
-            sum += fabs(M[i + 1][j + 7] - M[j + 7][i + 1]);
+    int block_size = N_SIZE / 4;
+    bool symmetric = true;
+    for (size_t i = 0; i < N_SIZE; i += block_size) {
+        for(int k = 0; k < block_size; k++) {
+            for (size_t j = i + 1 + k; j < N_SIZE; j++) {
+                if(M[i + k][j] != M[j][i + k]) {
+                    symmetric = false;
+                }
+            }
         }
     }
-    return sum == 0.0;
+    return symmetric;
 }
 
 bool checkSymOMP(float** M) {
-    float sum = 0.0;
-    #pragma omp parallel for schedule(static) collapse(2) reduction(+:sum)
+    bool symmetric = true;
+    #pragma omp parallel for schedule(static) reduction(&&: symmetric)
     for (size_t i = 0; i < N_SIZE; i++) {
         for (size_t j = i + 1; j < N_SIZE; j++) {
-            sum += fabs(M[i][j] - M[j][i]);
+            symmetric = symmetric && (M[i][j] == M[j][i]);
         }
     }
 
-    return sum == 0.0;
+    return symmetric;
+}
+
+bool checkSymOMPBlock(float** M) {
+    int block_size = N_SIZE / 4;
+    bool symmetric = true;
+    #pragma omp parallel for schedule(static) collapse(2) reduction(&&: symmetric)
+    for (size_t i = 0; i < N_SIZE; i += block_size) {
+        for(int k = 0; k < block_size; k++) {
+            for (size_t j = i + 1 + k; j < N_SIZE; j++) {
+                symmetric = symmetric && (M[i + k][j] == M[j][i + k]);
+            }
+        }
+    }
+    return symmetric;
 }
 
 // function created to check if the matrix transposition has been done correctly
