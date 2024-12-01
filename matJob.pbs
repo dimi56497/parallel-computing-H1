@@ -1,0 +1,330 @@
+#!/bin/bash
+#PBS -N matJob
+#PBS -o ./matInfo.out
+#PBS -e ./matErr.err
+#PBS -q short_cpuQ 
+#PBS -l walltime=0:03:00
+#PBS -l select=1:ncpus=64:ompthreads=64:mem=200mb
+
+cd /home/username/dir # attention this line must be changed
+
+module load gcc91
+g++() {
+    g++-9.1.0 "$@"
+}
+g++ --version
+
+hostname
+lscpu
+
+# build and logs directory creation
+if [ -d "build" ]; then 
+    rm -r build
+    rm -r logs
+fi
+
+mkdir build
+mkdir logs
+
+# compile code for n = 16
+g++ -o build/execSer16 src/parallel.cpp -DSERIAL -fopenmp
+g++ -o build/execImpV1_16 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -O2
+g++ -o build/execImpV2_16 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_16 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -O2
+g++ -o build/execOmp_16 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -fopenmp
+g++ -o build/execOmpBlock_16 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -fopenmp
+
+# compile code for n = 32
+g++ -o build/execSer32 src/parallel.cpp -DSERIAL -DN_SIZE=32 -fopenmp
+g++ -o build/execImpV1_32 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=32 -O2
+g++ -o build/execImpV2_32 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=32 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_32 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=32 -O2
+g++ -o build/execOmp_32 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=32 -fopenmp
+g++ -o build/execOmpBlock_32 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=32 -fopenmp
+
+# compile code for n = 64
+g++ -o build/execSer64 src/parallel.cpp -DSERIAL -DN_SIZE=64 -fopenmp
+g++ -o build/execImpV1_64 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=64 -O2
+g++ -o build/execImpV2_64 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=64 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_64 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=64 -O2
+g++ -o build/execOmp_64 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=64 -fopenmp
+g++ -o build/execOmpBlock_64 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=64 -fopenmp
+
+
+# compile code for n = 128
+g++ -o build/execSer128 src/parallel.cpp -DSERIAL -DN_SIZE=128 -fopenmp
+g++ -o build/execImpV1_128 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=128 -O2
+g++ -o build/execImpV2_128 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=128 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_128 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=128 -O2
+g++ -o build/execOmp_128 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=128 -fopenmp
+g++ -o build/execOmpBlock_128 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=128 -fopenmp
+
+# compile code for n = 256
+g++ -o build/execSer256 src/parallel.cpp -DSERIAL -DN_SIZE=256 -fopenmp
+g++ -o build/execImpV1_256 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=256 -O2
+g++ -o build/execImpV2_256 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=256 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_256 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=256 -O2
+g++ -o build/execOmp_256 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=256 -fopenmp
+g++ -o build/execOmpBlock_256 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=256 -fopenmp
+
+# compile code for n = 512
+g++ -o build/execSer512 src/parallel.cpp -DSERIAL -DN_SIZE=512 -fopenmp
+g++ -o build/execImpV1_512 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=512 -O2
+g++ -o build/execImpV2_512 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=512 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_512 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=512 -O2
+g++ -o build/execOmp_512 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=512 -fopenmp
+g++ -o build/execOmpBlock_512 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=512 -fopenmp
+
+# compile code for n = 1024
+g++ -o build/execSer1024 src/parallel.cpp -DSERIAL -DN_SIZE=1024 -fopenmp
+g++ -o build/execImpV1_1024 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=1024 -O2
+g++ -o build/execImpV2_1024 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=1024 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_1024 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=1024 -O2
+g++ -o build/execOmp_1024 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=1024 -fopenmp
+g++ -o build/execOmpBlock_1024 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=1024 -fopenmp
+
+
+# compile code for n = 2048
+g++ -o build/execSer2048 src/parallel.cpp -DSERIAL -DN_SIZE=2048 -fopenmp
+g++ -o build/execImpV1_2048 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=2048 -O2
+g++ -o build/execImpV2_2048 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=2048 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_2048 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=2048 -O2
+g++ -o build/execOmp_2048 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=2048 -fopenmp
+g++ -o build/execOmpBlock_2048 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=2048 -fopenmp
+
+# compile code for n = 4096
+g++ -o build/execSer4096 src/parallel.cpp -DSERIAL -DN_SIZE=4096 -fopenmp
+g++ -o build/execImpV1_4096 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV1\" -DN_SIZE=4096 -O2
+g++ -o build/execImpV2_4096 src/parallel.cpp -DIMPLICIT -DFILE_NAME=\"implicitV2\" -DN_SIZE=4096 -O2 -ftree-loop-if-convert -ftree-loop-distribution -floop-interchange -ftree-vectorize -fvect-cost-model=unlimited -funroll-loops -march=native -ffast-math -mprefer-vector-width=512 -fprefetch-loop-arrays
+g++ -o build/execImpBlock_4096 src/parallel.cpp -DIMPLICIT -DBLOCK -DFILE_NAME=\"implicitBlock\" -DN_SIZE=4096 -O2
+g++ -o build/execOmp_4096 src/parallel.cpp -DOMP -DFILE_NAME=\"omp\" -DN_SIZE=4096 -fopenmp
+g++ -o build/execOmpBlock_4096 src/parallel.cpp -DOMP -DBLOCK -DFILE_NAME=\"ompBlock\" -DN_SIZE=4096 -fopenmp
+
+
+for i in {1..3}
+do
+    # run code for n = 16
+    export OMP_NUM_THREADS=1
+    ./build/execSer16
+    ./build/execImpV1_16
+    ./build/execImpV2_16
+    ./build/execImpBlock_16
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_16
+    ./build/execOmpBlock_16
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_16
+    ./build/execOmpBlock_16
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_16
+    ./build/execOmpBlock_16
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_16
+    ./build/execOmpBlock_16
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_16
+    ./build/execOmpBlock_16
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_16
+    ./build/execOmpBlock_16
+
+    # run code for n = 32
+    export OMP_NUM_THREADS=1
+    ./build/execSer32
+    ./build/execImpV1_32
+    ./build/execImpV2_32
+    ./build/execImpBlock_32
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_32
+    ./build/execOmpBlock_32
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_32
+    ./build/execOmpBlock_32
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_32
+    ./build/execOmpBlock_32
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_32
+    ./build/execOmpBlock_32
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_32
+    ./build/execOmpBlock_32
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_32
+    ./build/execOmpBlock_32
+
+    # run code for n = 64
+    export OMP_NUM_THREADS=1
+    ./build/execSer64
+    ./build/execImpV1_64
+    ./build/execImpV2_64
+    ./build/execImpBlock_64
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_64
+    ./build/execOmpBlock_64
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_64
+    ./build/execOmpBlock_64
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_64
+    ./build/execOmpBlock_64
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_64
+    ./build/execOmpBlock_64
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_64
+    ./build/execOmpBlock_64
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_64
+    ./build/execOmpBlock_64
+    
+    # run code for n = 128
+    export OMP_NUM_THREADS=1
+    ./build/execSer128
+    ./build/execImpV1_128
+    ./build/execImpV2_128
+    ./build/execImpBlock_128
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_128
+    ./build/execOmpBlock_128
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_128
+    ./build/execOmpBlock_128
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_128
+    ./build/execOmpBlock_128
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_128
+    ./build/execOmpBlock_128
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_128
+    ./build/execOmpBlock_128
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_128
+    ./build/execOmpBlock_128
+
+    # run code for n = 256
+    export OMP_NUM_THREADS=1
+    ./build/execSer256
+    ./build/execImpV1_256
+    ./build/execImpV2_256
+    ./build/execImpBlock_256
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_256
+    ./build/execOmpBlock_256
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_256
+    ./build/execOmpBlock_256
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_256
+    ./build/execOmpBlock_256
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_256
+    ./build/execOmpBlock_256
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_256
+    ./build/execOmpBlock_256
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_256
+    ./build/execOmpBlock_256
+
+    # run code for n = 512
+    export OMP_NUM_THREADS=1
+    ./build/execSer512
+    ./build/execImpV1_512
+    ./build/execImpV2_512
+    ./build/execImpBlock_512
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_512
+    ./build/execOmpBlock_512
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_512
+    ./build/execOmpBlock_512
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_512
+    ./build/execOmpBlock_512
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_512
+    ./build/execOmpBlock_512
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_512
+    ./build/execOmpBlock_512
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_512
+    ./build/execOmpBlock_512
+
+    # run code for n = 1024
+    export OMP_NUM_THREADS=1
+    ./build/execSer1024
+    ./build/execImpV1_1024
+    ./build/execImpV2_1024
+    ./build/execImpBlock_1024
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_1024
+    ./build/execOmpBlock_1024
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_1024
+    ./build/execOmpBlock_1024
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_1024
+    ./build/execOmpBlock_1024
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_1024
+    ./build/execOmpBlock_1024
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_1024
+    ./build/execOmpBlock_1024
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_1024
+    ./build/execOmpBlock_1024
+
+    # run code for n = 2048
+    export OMP_NUM_THREADS=1
+    ./build/execSer2048
+    ./build/execImpV1_2048
+    ./build/execImpV2_2048
+    ./build/execImpBlock_2048
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_2048
+    ./build/execOmpBlock_2048
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_2048
+    ./build/execOmpBlock_2048
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_2048
+    ./build/execOmpBlock_2048
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_2048
+    ./build/execOmpBlock_2048
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_2048
+    ./build/execOmpBlock_2048
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_2048
+    ./build/execOmpBlock_2048
+
+    # run code for n = 4096
+    export OMP_NUM_THREADS=1
+    ./build/execSer4096
+    ./build/execImpV1_4096
+    ./build/execImpV2_4096
+    ./build/execImpBlock_4096
+    export OMP_NUM_THREADS=2
+    ./build/execOmp_4096
+    ./build/execOmpBlock_4096
+    export OMP_NUM_THREADS=4
+    ./build/execOmp_4096
+    ./build/execOmpBlock_4096
+    export OMP_NUM_THREADS=8
+    ./build/execOmp_4096
+    ./build/execOmpBlock_4096
+    export OMP_NUM_THREADS=16
+    ./build/execOmp_4096
+    ./build/execOmpBlock_4096
+    export OMP_NUM_THREADS=32
+    ./build/execOmp_4096
+    ./build/execOmpBlock_4096
+    export OMP_NUM_THREADS=64
+    ./build/execOmp_4096
+    ./build/execOmpBlock_4096
+done
